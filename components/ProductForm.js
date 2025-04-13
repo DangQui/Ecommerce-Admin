@@ -2,122 +2,173 @@ import Layout from "@/components/Layout";
 import axios from "axios";
 import { redirect } from "next/navigation";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Spinner from "./Spinner";
 import { ReactSortable } from "react-sortablejs";
 
+// Hàm format số với dấu chấm (ví dụ: 1234567 -> 1.234.567)
+function formatNumberWithDots(number) {
+  return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+// Hàm loại bỏ dấu chấm để lấy giá trị số thực tế (ví dụ: 1.234.567 -> 1234567)
+function parseNumberWithDots(value) {
+  return value.replace(/\./g, "");
+}
 
 export default function ProductForm({
-    // Các giá trị hiện tại
-    _id,
-    title: existingTitle, 
-    description: existingDescription, 
-    price: existingPrice,
-    images: existingImages,
+  _id,
+  title: existingTitle,
+  description: existingDescription,
+  price: existingPrice,
+  images: existingImages,
+  category: assignedCategory,
 }) {
-    const[title, setTitle] = useState(existingTitle || "");
-    const[description, setDescription] = useState(existingDescription || "");
-    const[price, setPrice] = useState(existingPrice || "");
-    const [images, setImages] = useState(existingImages || []);
-    const [goToProducts, setGoToProducts] = useState(false);
-    const [isUploading, setIsUploading] = useState(false);
-    const router = useRouter();
-    
-    async function saveProduct(ev) {
-        ev.preventDefault();
-        const data = {title, description, price, images};
-        if (_id) {
-            // Cập nhật sản phẩm
-            await axios.put('/api/products', {...data, _id});
-        } else{
-            // Thêm mới sản phẩm
-            await axios.post('/api/products', data);
-        }
-        setGoToProducts(true);
-    }
+  const [title, setTitle] = useState(existingTitle || "");
+  const [description, setDescription] = useState(existingDescription || "");
+  const [category, setCategory] = useState(assignedCategory || '');
+  const [price, setPrice] = useState(existingPrice || ""); // Giá trị thực tế (không có dấu chấm)
+  const [displayPrice, setDisplayPrice] = useState(
+    existingPrice ? formatNumberWithDots(existingPrice) : "" // Giá trị hiển thị (có dấu chấm)
+  );
+  const [images, setImages] = useState(existingImages || []);
+  const [goToProducts, setGoToProducts] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const router = useRouter();
 
-    if (goToProducts) {
-        router.push('/products');
-    }
+  useEffect(() => {
+    axios.get('/api/categories').then(result => {
+        setCategories(result.data);
+    })
+  }, []);
 
-    async function upLoadImages(ev) {
-        const files = ev.target?.files;
-        if (files.length > 0) {
-            setIsUploading(true);
-            const data = new FormData();
-            for (const file of files){
-                data.append('file', file);
-            }
-            const res = await axios.post('/api/upload', data);
-            setImages(oldImages => {
-                return [...oldImages, ...res.data.links];
-            });
-            setIsUploading(false);
-        }
+  async function saveProduct(ev) {
+    ev.preventDefault();
+    const data = { title, description, price, images, category }; // price ở đây là giá trị thực tế (không có dấu chấm)
+    if (_id) {
+      // Cập nhật sản phẩm
+      await axios.put("/api/products", { ...data, _id });
+    } else {
+      // Thêm mới sản phẩm
+      await axios.post("/api/products", data);
     }
+    setGoToProducts(true);
+  }
 
-    function updateImagesOrder(images) {
-        setImages(images);
+  if (goToProducts) {
+    router.push("/products");
+  }
+
+  async function upLoadImages(ev) {
+    const files = ev.target?.files;
+    if (files.length > 0) {
+      setIsUploading(true);
+      const data = new FormData();
+      for (const file of files) {
+        data.append("file", file);
+      }
+      const res = await axios.post("/api/upload", data);
+      setImages((oldImages) => {
+        return [...oldImages, ...res.data.links];
+      });
+      setIsUploading(false);
     }
+  }
 
-    return (
-        <form onSubmit={saveProduct}>
-            <label>Tên sản phẩm</label>
-            <input 
-                type="text" 
-                placeholder="Nhập tên sản phẩm" 
-                value={title}
-                onChange={ev => setTitle(ev.target.value)} 
+  function updateImagesOrder(images) {
+    setImages(images);
+  }
+
+  // Hàm xử lý khi người dùng nhập giá
+  function handlePriceChange(ev) {
+    const inputValue = ev.target.value;
+    // Loại bỏ các ký tự không phải số và dấu chấm
+    const numericValue = parseNumberWithDots(inputValue);
+    // Chỉ cho phép số
+    if (numericValue === "" || !isNaN(numericValue)) {
+      setPrice(numericValue); // Lưu giá trị thực tế (không có dấu chấm)
+      setDisplayPrice(numericValue ? formatNumberWithDots(numericValue) : ""); // Cập nhật giá trị hiển thị (có dấu chấm)
+    }
+  }
+
+  return (
+    <form onSubmit={saveProduct}>
+      <label>Tên sản phẩm</label>
+      <input
+        type="text"
+        placeholder="Nhập tên sản phẩm"
+        value={title}
+        onChange={(ev) => setTitle(ev.target.value)}
+      />
+      <label>Danh mục</label>
+      <select value={category} 
+              onChange={ev => setCategory(ev.target.value)}>
+        <option value="">Chưa phân loại</option>
+        {categories.length > 0 &&
+            categories.map((c) => (
+        <option key={c._id} value={c._id}>
+            {c.name}
+        </option>
+    ))}
+      </select>
+      <label>Hình ảnh</label>
+      <div className="mb-2 flex flex-wrap gap-1">
+        <ReactSortable
+          list={images}
+          className="flex flex-wrap gap-1"
+          setList={updateImagesOrder}
+        >
+          {!!images?.length &&
+            images.map((link) => (
+              <div key={link} className="h-24">
+                <img src={link} alt="" className="rounded-lg" />
+              </div>
+            ))}
+        </ReactSortable>
+        {isUploading && (
+          <div className="h-24 flex items-center">
+            <Spinner />
+          </div>
+        )}
+        <label
+          className="w-24 h-24 text-center 
+          flex items-center justify-center text-sm gap-1
+          text-gray-500 rounded-lg bg-gray-200 cursor-pointer"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="size-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 
+              21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
             />
-            <label>
-                Hình ảnh
-            </label>
-            <div className="mb-2 flex flex-wrap gap-1">
-                <ReactSortable 
-                    list={images}
-                    className="flex flex-wrap gap-1" 
-                    setList={updateImagesOrder}>
-                    {!!images?.length && images.map(link => (
-                        <div key={link} className="h-24">
-                            <img src={link} alt="" className="rounded-lg" />
-                        </div>
-                    ))}
-                </ReactSortable>
-                {isUploading && (
-                    <div className="h-24 flex items-center">
-                        <Spinner />
-                    </div>
-                )}
-                <label className="w-24 h-24 text-center 
-                flex items-center justify-center text-sm gap-1
-                text-gray-500 rounded-lg bg-gray-200 cursor-pointer">
-                    <svg xmlns="http://www.w3.org/2000/svg" 
-                    fill="none" viewBox="0 0 24 24" strokeWidth={1.5} 
-                    stroke="currentColor" className="size-6">
-                        <path strokeLinecap="round" strokeLinejoin="round" 
-                        d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 
-                        21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-                    </svg>
-                    <div>
-                        Tải lên
-                    </div>
-                    <input type="file" onChange={upLoadImages} className="hidden" />
-                </label>
-            </div>
-            <label>Mô tả</label>
-            <textarea 
-                placeholder="Nhập mô tả sản phẩm" 
-                value={description} 
-                onChange={ev => setDescription(ev.target.value)}
-            />
-            <label>Giá (VND)</label>
-            <input 
-                type="number" 
-                placeholder="Nhập giá sản phẩm" 
-                value={price}
-                onChange={ev => setPrice(ev.target.value)}
-            />
-            <button type="submit" className="btn-primary">Lưu</button>
-        </form>
-    );
+          </svg>
+          <div>Tải lên</div>
+          <input type="file" onChange={upLoadImages} className="hidden" />
+        </label>
+      </div>
+      <label>Mô tả</label>
+      <textarea
+        placeholder="Nhập mô tả sản phẩm"
+        value={description}
+        onChange={(ev) => setDescription(ev.target.value)}
+      />
+      <label>Giá (VND)</label>
+      <input
+        type="text" // Đổi type từ "number" thành "text" để hiển thị dấu chấm
+        placeholder="Nhập giá sản phẩm"
+        value={displayPrice} // Hiển thị giá trị có dấu chấm
+        onChange={handlePriceChange} // Xử lý khi người dùng nhập
+      />
+      <button type="submit" className="btn-primary">Lưu</button>
+    </form>
+  );
 }

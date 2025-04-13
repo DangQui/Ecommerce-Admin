@@ -18,10 +18,11 @@
     "multiparty": "^4.2.3",
     "next": "15.2.4",
     "next-auth": "^4.24.11",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
     "react-sortablejs": "^6.1.4",
     "react-spinners": "^0.15.0",
+    "react-sweetalert2": "^0.6.0",
     "sortablejs": "^1.15.6"
   },
   "devDependencies": {
