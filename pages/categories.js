@@ -31,6 +31,7 @@ function Categories({swal}) {
                 values:p.values.split(',')
             })),
         };
+        console.log("Data to save:", data); // Thêm log để kiểm tra
         if (editedCategory){
             data._id = editedCategory._id;
             await axios.put('/api/categories', data);
@@ -155,7 +156,7 @@ function Categories({swal}) {
                             <button 
                                 onClick={() => removeProperty(index)}
                                 type="button"
-                                className="btn-default cursor-pointer">
+                                className="btn-red cursor-pointer">
                                 Xóa
                             </button>
                         </div>
@@ -171,7 +172,7 @@ function Categories({swal}) {
                                 setParentCategory('');
                                 setProperties([]);
                             }}
-                            className="btn-default cursor-pointer">Hủy bỏ</button>
+                            className="btn-red cursor-pointer">Hủy bỏ</button>
                     )}
                     <button 
                         type="submit" 
@@ -196,8 +197,8 @@ function Categories({swal}) {
                             <td>{Category.name}</td>
                             <td>{Category?.parent?.name}</td>
                             <td>
-                                <button onClick={() => editCategory(Category)} className="btn-primary mr-1">Chỉnh sửa</button>
-                                <button onClick={() => deleteCategory(Category)} className="btn-primary">Xóa</button>
+                                <button onClick={() => editCategory(Category)} className="btn-default mr-1">Chỉnh sửa</button>
+                                <button onClick={() => deleteCategory(Category)} className="btn-red">Xóa</button>
                             </td>
                         </tr>
                     ))}

@@ -19,7 +19,7 @@ export default function Products() {
     }, []);
     return (
         <Layout>
-            <Link className="bg-blue-900 text-white rounded-md py-1 px-2" href={"/products/new"}>Thêm sản phẩm mới</Link>
+            <Link className="bg-indigo-600 text-white rounded-sm py-1 px-2" href={"/products/new"}>Thêm sản phẩm mới</Link>
             <table className="basic mt-2">
                 <thead>
                     <tr>
@@ -32,7 +32,7 @@ export default function Products() {
                         <tr key={product._id}>
                             <td>{product.title}</td>
                             <td>
-                                <Link href={'/products/edit/' + product._id}>
+                                <Link className="btn-default" href={'/products/edit/' + product._id}>
                                     <svg xmlns="http://www.w3.org/2000/svg" 
                                     fill="none" viewBox="0 0 24 24" strokeWidth={1.5} 
                                     stroke="currentColor" className="size-4">
@@ -45,7 +45,7 @@ export default function Products() {
                                     </svg>
                                     Chỉnh sửa
                                 </Link>
-                                <Link href={'/products/delete/' + product._id}>
+                                <Link className="btn-red" href={'/products/delete/' + product._id}>
                                     <svg xmlns="http://www.w3.org/2000/svg" 
                                     fill="none" viewBox="0 0 24 24" 
                                     strokeWidth={1.5} stroke="currentColor" 
